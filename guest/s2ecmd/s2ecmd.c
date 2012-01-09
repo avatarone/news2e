@@ -34,63 +34,87 @@
  *
  */
 
-#ifndef S2ETOOLS_LIBRARY_H
+#include <s2e.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-#define S2ETOOLS_LIBRARY_H
+typedef void (*cmd_handler_t)(const char **args);
 
-#include "ExecutableFile.h"
+typedef struct _cmd_t {
+    char *name;
+    cmd_handler_t handler;
+    unsigned args_count;
+}cmd_t;
 
-#include "lib/ExecutionTracer/ModuleParser.h"
-#include "llvm/System/Path.h"
-
-#include <string>
-#include <set>
-#include <inttypes.h>
-
-namespace s2etools
+void handler_kill(const char **args)
 {
-
-class Library
-{
-public:
-    typedef std::map<std::string, s2etools::ExecutableFile*> ModuleNameToExec;
-    typedef std::vector<std::string> PathList;
-    typedef std::set<std::string> StringSet;
-
-    Library();
-    virtual ~Library();
-
-    bool addLibrary(const std::string &libName);
-    bool addLibraryAbs(const std::string &libName);
-
-    ExecutableFile *get(const std::string &name);
-
-    void addPath(const std::string &s);
-    void setPaths(const PathList &s);
-
-    bool print(
-            const std::string &modName, uint64_t loadBase, uint64_t imageBase,
-            uint64_t pc, std::string &out, bool file, bool line, bool func);
-
-    bool print(const ModuleInstance *ni, uint64_t pc, std::string &out, bool file, bool line, bool func);
-    bool getInfo(const ModuleInstance *ni, uint64_t pc, std::string &file, uint64_t &line, std::string &func);
-
-    bool findLibrary(const std::string &libName, std::string &abspath);
-    bool findSuffixedModule(const std::string &moduleName, const std::string &suffix, llvm::sys::Path &path);
-    bool findBasicBlockList(const std::string &moduleName, llvm::sys::Path &path);
-    bool findDisassemblyListing(const std::string &moduleName, llvm::sys::Path &path);
-
-
-
-    static uint64_t translatePid(uint64_t pid, uint64_t pc);
-private:
-    PathList m_libpath;
-    //std::string m_libpath;
-    ModuleNameToExec m_libraries;
-    StringSet m_badLibraries;
-
-};
-
+    int status = atoi(args[0]);
+    const char *message = args[1];
+    s2e_kill_state(status, message);
 }
 
-#endif
+void handler_message(const char **args)
+{
+    s2e_message(args[0]);
+}
+
+
+#define COMMAND(c, args) {#c, handler_##c, args}
+
+static cmd_t s_commands[] = {
+    COMMAND(kill, 2),
+    COMMAND(message, 1),
+    {NULL, NULL, 0}
+};
+
+void print_commands()
+{
+    unsigned i=0;
+    printf("%-15s  %s\n\n", "Command name", "Argument count");
+    while(s_commands[i].handler) {
+        printf("%-15s  %d\n", s_commands[i].name, s_commands[i].args_count);
+        ++i;
+    }
+}
+
+int find_command(const char *cmd)
+{
+    unsigned i=0;
+    while(s_commands[i].handler) {
+        if (!strcmp(s_commands[i].name, cmd)) {
+            return i;
+        }
+        ++i;
+    }
+    return -1;
+}
+
+int main(int argc, char **argv)
+{
+    if (argc < 2) {
+        print_commands();
+        return -1;
+    }
+
+    const char *cmd = argv[1];
+    int cmd_index = find_command(cmd);
+
+    if (cmd_index == -1) {
+        printf("Command %s not found\n", cmd);
+        return -1;
+    }
+
+    argc -= 2;
+    ++argv;
+    ++argv;
+
+    if (argc != s_commands[cmd_index].args_count) {
+        printf("Invalid number of arguments supplied (%d instead of %d)\n", argc, s_commands[cmd_index].args_count);
+        return -1;
+    }
+
+    s_commands[cmd_index].handler((const char**)argv);
+
+    return 0;
+}
