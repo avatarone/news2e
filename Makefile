@@ -278,7 +278,6 @@ QEMU_COMMON_FLAGS = --prefix=$(S2EBUILD)/opt\
                     --enable-s2e \
                     --with-pkgversion=S2E \
                     --disable-virtfs \
-                    --disable-fdt \
                     $(EXTRA_QEMU_FLAGS)
 
 QEMU_CONFIGURE_FLAGS = --with-stp=$(S2EBUILD)/stp \
