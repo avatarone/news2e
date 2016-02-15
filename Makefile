@@ -281,22 +281,23 @@ QEMU_COMMON_FLAGS = --prefix=$(S2EBUILD)/opt\
                     $(EXTRA_QEMU_FLAGS)
 
 QEMU_CONFIGURE_FLAGS = --with-stp=$(S2EBUILD)/stp \
+                       --clang=$(CLANG_CC) \
                        $(QEMU_COMMON_FLAGS)
 
-QEMU_DEBUG_FLAGS = --with-llvm=$(LLVMBUILD)/llvm-debug/Debug+Asserts \
-                   --enable-debug
+QEMU_DEBUG_FLAGS = --with-llvm-config=$(LLVMBUILD)/llvm-debug/Debug+Asserts/bin/llvm-config \
+                   --with-klee=$(S2EBUILD)/klee-debug/Debug+Asserts \
+                   --enable-debug \
 
-QEMU_RELEASE_FLAGS = --with-llvm=$(LLVMBUILD)/llvm-release/Release+Asserts
+QEMU_RELEASE_FLAGS = --with-llvm-config=$(LLVMBUILD)/llvm-release/Release+Asserts/bin/llvm-config \
+                     --with-klee=$(S2EBUILD)/klee-release/Release+Asserts \
 
 stamps/qemu-debug-configure: stamps/klee-debug-make
 stamps/qemu-debug-configure: CONFIGURE_COMMAND = $(S2ESRC)/qemu/configure \
-                                                 --with-klee=$(S2EBUILD)/klee-debug/Debug+Asserts \
                                                  $(QEMU_DEBUG_FLAGS) \
                                                  $(QEMU_CONFIGURE_FLAGS)
 
 stamps/qemu-release-configure: stamps/klee-release-make
 stamps/qemu-release-configure: CONFIGURE_COMMAND = $(S2ESRC)/qemu/configure \
-                                                   --with-klee=$(S2EBUILD)/klee-release/Release+Asserts \
                                                    $(QEMU_RELEASE_FLAGS) \
                                                    $(QEMU_CONFIGURE_FLAGS)
 
