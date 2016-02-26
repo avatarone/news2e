@@ -1,10 +1,12 @@
 [submodule "stp"]
-    path = stp
-    url = gitosis@crazyivan.s3.eurecom.fr:news2e/stp.git
+        path = stp
+        url = https://github.com/eurecom-s3/news2e-stp
 [submodule "klee"]
-    path = klee
-    url = gitosis@crazyivan.s3.eurecom.fr:news2e/klee.git
+        path = klee
+        url = https://github.com/eurecom-s3/news2e-klee
 [submodule "qemu"]
-    path = qemu
-    url = gitosis@crazyivan.s3.eurecom.fr:news2e/qemu.git
-
+        path = qemu
+        url = https://github.com/eurecom-s3/news2e-qemu
+[submodule "test"]
+        path = test
+        url = https://github.com/eurecom-s3/news2e-test
