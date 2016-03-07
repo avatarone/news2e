@@ -1,0 +1,12 @@
+diff -Naur bla/include/llvm/Support/system_error.h llvm-3.2.src/include/llvm/Support/system_error.h
+--- bla/include/llvm/Support/system_error.h	2016-03-07 18:32:09.527234897 +0100
++++ llvm-3.2.src/include/llvm/Support/system_error.h	2016-03-07 18:32:26.739235123 +0100
+@@ -887,7 +887,7 @@
+   _ v_;
+ 
+   windows_error(_ v) : v_(v) {}
+-  explicit windows_error(int v) : v_(_(v)) {}
++  explicit windows_error(int v) : v_(_((_) v)) {}
+   operator int() const {return v_;}
+ };
+ 

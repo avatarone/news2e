@@ -117,7 +117,10 @@ $(CLANG_SRC) $(COMPILER_RT_SRC) $(LLVM_SRC):
 $(CLANG_SRC_DIR): $(CLANG_SRC)
 $(COMPILER_RT_SRC_DIR): $(COMPILER_RT_SRC)
 $(LLVM_SRC_DIR): $(LLVM_SRC)
-$(CLANG_SRC_DIR) $(COMPILER_RT_SRC_DIR) $(LLVM_SRC_DIR):
+	tar -xmzf $<
+	( cd $(LLVM_SRC_DIR) && patch -p1 < $(S2ESRC)/patches/llvm_system_error_h_cast.patch )
+
+$(CLANG_SRC_DIR) $(COMPILER_RT_SRC_DIR):
 	tar -xmzf $<
 
 $(LLVM_NATIVE_SRC_DIR): $(LLVM_SRC_DIR)
