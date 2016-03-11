@@ -97,9 +97,14 @@ stamps/%-make:
 	touch $@
 
 # On Ubuntu 14.04, c++config.h is located in a platform-specific path
-ifeq (,$(wildcard /usr/include/x86_64-linux-gnu/c++/4.8/c++config.h))
- export CPLUS_INCLUDE_PATH=/usr/include:/usr/include/x86_64-linux-gnu:/usr/include/x86_64-linux-gnu/c++/4.8
- export C_INCLUDE_PATH=/usr/include:/usr/include/x86_64-linux-gnu
+CXXCONFIG_INCLUDE_PATH := /usr/include/x86_64-linux-gnu/c++/4.8
+ifneq (,$(wildcard $(CXXCONFIG_INCLUDE_PATH)/c++config.h) $(wildcard $(CXXCONFIG_INCLUDE_PATH)/bits/c++config.h))
+CXXCONFIG_CXXFLAGS := -I$(CXXCONFIG_INCLUDE_PATH)
+CPLUS_INCLUDE_PATH := "$(CPLUS_INCLUDE_PATH):$(CXXCONFIG_INCLUDE_PATH)"
+export CPLUS_INCLUDE_PATH
+else
+CXXCONFIG_CXXFLAGS :=
+CXXCONFIG_INCLUDE_PATH :=
 endif
 
 #############
@@ -271,8 +276,8 @@ stamps/klee-asan-release-make: BUILD_OPTS = ENABLE_OPTIMIZED=1
 # QEMU #
 ########
 
-#HACK: LLVM does not recognize which processor features are supported, and uses SSE4 when it's not supported, so disable this
-EXTRA_QEMU_FLAGS += --extra-cflags=-mno-sse3 --extra-cxxflags=-mno-sse3
+#Use special include folder for c++config.h on Ubuntu 14.04
+EXTRA_QEMU_FLAGS += --extra-cflags="$(CXXCONFIG_CXXFLAGS)"
 
 QEMU_S2E_ARCH =
 QEMU_S2E_ARCH += i386-s2e-softmmu i386-softmmu
