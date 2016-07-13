@@ -64,6 +64,8 @@ GIT ?= git
 
 KLEE_QEMU_DIRS = $(foreach suffix,-debug -release,$(addsuffix $(suffix),klee klee-asan qemu qemu-asan))
 
+MINISAT_DIRS = $(foreach suffix,-debug -release, $(addsuffix $(suffix),minisat))
+
 ifeq ($(LLVMBUILD),$(S2EBUILD))
 LLVM_DIRS = llvm-debug llvm-native llvm-release
 endif
@@ -85,7 +87,7 @@ distclean: clean guestclean
 
 ALWAYS:
 
-guest-tools32 guest-tools64 $(KLEE_QEMU_DIRS) $(LLVM_DIRS) stamps tools-debug tools-release:
+guest-tools32 guest-tools64 $(KLEE_QEMU_DIRS) $(LLVM_DIRS) $(MINISAT_DIRS) stamps tools-debug tools-release:
 	mkdir -p $@
 
 stamps/%-configure: | % stamps
@@ -187,6 +189,16 @@ else
 stamps/llvm-release-make stamps/llvm-debug-make stamps/llvm-native-make:
 	@echo "Won't build $@, using $(LLVMBUILD) folder"
 endif
+
+###########
+# Minisat #
+###########
+
+stamps/minisat-debug-configure: CMAKE_BUILD_TYPE = Debug
+
+stamps/minisat-release-configure: CMAKE_BUILD_TYPE = Release
+
+stamps/minisat-%-configure: CONFIGURE_COMMAND = cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE) $(S2ESRC)/minisat/
 
 #######
 # STP #

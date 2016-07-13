@@ -10,3 +10,6 @@
 [submodule "test"]
         path = test
         url = https://github.com/eurecom-s3/news2e-test
+[submodule "minisat"]
+	path = minisat
+	url = https://github.com/zaddach/minisat
