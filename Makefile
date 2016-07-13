@@ -65,6 +65,8 @@ GIT ?= git
 KLEE_QEMU_DIRS = $(foreach suffix,-debug -release,$(addsuffix $(suffix),klee klee-asan qemu qemu-asan))
 
 MINISAT_DIRS = $(foreach suffix,-debug -release, $(addsuffix $(suffix),minisat))
+STP_DIRS = $(foreach suffix,-debug -release, $(addsuffix $(suffix),stp))
+
 
 ifeq ($(LLVMBUILD),$(S2EBUILD))
 LLVM_DIRS = llvm-debug llvm-native llvm-release
@@ -87,7 +89,7 @@ distclean: clean guestclean
 
 ALWAYS:
 
-guest-tools32 guest-tools64 $(KLEE_QEMU_DIRS) $(LLVM_DIRS) $(MINISAT_DIRS) stamps tools-debug tools-release:
+guest-tools32 guest-tools64 $(KLEE_QEMU_DIRS) $(LLVM_DIRS) $(MINISAT_DIRS) $(STP_DIRS) stamps tools-debug tools-release:
 	mkdir -p $@
 
 stamps/%-configure: | % stamps
@@ -198,35 +200,27 @@ stamps/minisat-debug-configure: CMAKE_BUILD_TYPE = Debug
 
 stamps/minisat-release-configure: CMAKE_BUILD_TYPE = Release
 
-stamps/minisat-%-configure: CONFIGURE_COMMAND = cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE) $(S2ESRC)/minisat/
+stamps/minisat-%-configure: CONFIGURE_COMMAND = cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE) -DCMAKE_C_FLAGS=-fPIC -DCMAKE_CXX_FLAGS=-fPIC $(S2ESRC)/minisat/
+
+stamps/minisat-debug-make: stamps/minisat-debug-configure
+stamps/minisat-release-make: stamps/minisat-release-configure
 
 #######
 # STP #
 #######
 
-stamps/stp-make stamps/stp-asan-make: ALWAYS
+stamps/stp-debug-configure: stamps/minisat-debug-make
+stamps/stp-release-configure: stamps/minisat-release-make
 
-STP_CONFIGURE_FLAGS = --with-prefix=$(S2EBUILD)/stp --with-fpic \
-                      --with-g++=$(CLANG_CXX) --with-gcc=$(CLANG_CC)
+stamps/stp-debug-configure: CMAKE_BUILD_TYPE = Debug
+stamps/stp-debug-configure: BUILD_TYPE = debug
+stamps/stp-release-configure: CMAKE_BUILD_TYPE = Release
+stamps/stp-release-configure: BUILD_TYPE = release
 
-stamps/stp-configure: stamps/llvm-native-make
-stamps/stp-configure: CONFIGURE_COMMAND = scripts/configure $(STP_CONFIGURE_FLAGS)
+stamps/stp-%-configure: CONFIGURE_COMMAND = cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE) -DMINISAT_LIBRARY=$(S2EBUILD)/minisat-$(BUILD_TYPE)/libminisat.a -DMINISAT_INCLUDE_DIR=$(S2ESRC)/minisat/ -DCMAKE_C_FLAGS=-fPIC -DCMAKE_CXX_FLAGS=-fPIC $(S2ESRC)/stp/
 
-#STP: concurrent build is not reliable
-stamps/stp-make: stamps/stp-configure
-	cd stp && make
-	mkdir -p stamps && touch $@
-
-#ASAN-enabled STP
-#XXX: need to fix the STP build to actually use ASAN...
-
-stamps/stp-asan-configure: stamps/llvm-native-make
-stamps/stp-asan-configure: CONFIGURE_COMMAND = scripts/configure $(STP_CONFIGURE_FLAGS) --with-address-sanitizer
-
-stamps/stp-asan-make: stamps/stp-asan-configure
-	cd stp-asan && make
-	mkdir -p stamps && touch $@
-
+stamps/stp-debug-make: stamps/stp-debug-configure
+stamps/stp-release-make: stamps/stp-release-configure
 
 ########
 # KLEE #
