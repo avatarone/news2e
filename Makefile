@@ -62,10 +62,10 @@ COMPILER_RT_SRC_DIR=compiler-rt-$(LLVM_VERSION).src
 COMPILER_RT_DEST_DIR=$(LLVM_NATIVE_SRC_DIR)/projects/compiler-rt
 GIT ?= git
 
-KLEE_QEMU_DIRS = $(foreach suffix,-debug -release,$(addsuffix $(suffix),klee klee-asan qemu qemu-asan))
+KLEE_QEMU_DIRS = $(foreach suffix,-debug -release -asan,$(addsuffix $(suffix),klee qemu))
 
-MINISAT_DIRS = $(foreach suffix,-debug -release, $(addsuffix $(suffix),minisat))
-STP_DIRS = $(foreach suffix,-debug -release, $(addsuffix $(suffix),stp))
+MINISAT_DIRS = $(foreach suffix,-debug -release -asan, $(addsuffix $(suffix),minisat))
+STP_DIRS = $(foreach suffix,-debug -release -asan, $(addsuffix $(suffix),stp))
 
 
 ifeq ($(LLVMBUILD),$(S2EBUILD))
@@ -145,13 +145,6 @@ $(CLANG_DEST_DIR) $(COMPILER_RT_DEST_DIR):
 	mv $< $@
 endif
 
-stp stp-asan: $(S2ESRC)/stp $(S2ESRC)/stp/scripts/configure
-stp stp-asan:
-	cp -r $< $@
-
-$(S2ESRC)/stp/scripts/configure:
-	( cd $(S2ESRC) && $(GIT) submodule update --init stp )
-
 ########
 # LLVM #
 ########
@@ -196,61 +189,125 @@ endif
 # Minisat #
 ###########
 
+
+$(S2ESRC)/minisat/CMakeLists.txt:
+	( cd $(S2ESRC) && $(GIT) submodule update --init minisat )
+
 stamps/minisat-debug-configure: CMAKE_BUILD_TYPE = Debug
 
 stamps/minisat-release-configure: CMAKE_BUILD_TYPE = Release
 
-stamps/minisat-%-configure: CONFIGURE_COMMAND = cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE) -DCMAKE_C_FLAGS=-fPIC -DCMAKE_CXX_FLAGS=-fPIC $(S2ESRC)/minisat/
+stamps/minisat-asan-configure: ASAN_FLAGS = -fsanitize=address -fno-optimize-sibling-calls -fno-omit-frame-pointer
+stamps/minisat-asan-configure: CMAKE_BUILD_TYPE = Debug
+
+stamps/minisat-%-configure: CONFIGURE_COMMAND = cmake -G "Unix Makefiles" \
+	-DCMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE) \
+	-DCMAKE_C_FLAGS="-fPIC $(ASAN_FLAGS)" \
+	-DCMAKE_CXX_FLAGS="-fPIC $(ASAN_FLAGS)" \
+	-DCMAKE_MODULE_LINKER_FLAGS="$(ASAN_FLAGS)" \
+	-DCMAKE_SHARED_LINKER_FLAGS="$(ASAN_FLAGS)" \
+	-DCMAKE_EXE_LINKER_FLAGS="$(ASAN_FLAGS)" \
+	-DCMAKE_C_COMPILER="$(CLANG_CC)" \
+	-DCMAKE_CXX_COMPILER="$(CLANG_CXX)" \
+	$(S2ESRC)/minisat/ 
+
+stamps/minisat-%-configure: $(S2ESRC)/minisat/CMakeLists.txt
 
 stamps/minisat-debug-make: stamps/minisat-debug-configure
+stamps/minisat-asan-make: stamps/minisat-asan-configure
 stamps/minisat-release-make: stamps/minisat-release-configure
 
 #######
 # STP #
 #######
 
+$(S2ESRC)/stp/CMakeLists.txt:
+	( cd $(S2ESRC) && $(GIT) submodule update --init stp )
+
 stamps/stp-debug-configure: stamps/minisat-debug-make
+stamps/stp-asan-configure: stamps/minisat-asan-make
 stamps/stp-release-configure: stamps/minisat-release-make
+stamps/stp-%-configure: $(S2ESRC)/stp/CMakeLists.txt
 
 stamps/stp-debug-configure: CMAKE_BUILD_TYPE = Debug
 stamps/stp-debug-configure: BUILD_TYPE = debug
+
+stamps/stp-asan-configure: CMAKE_BUILD_TYPE = Debug
+stamps/stp-asan-configure: BUILD_TYPE = asan
+stamps/stp-asan-configure: ASAN_FLAGS = -fsanitize=address -fno-optimize-sibling-calls -fno-omit-frame-pointer
+
 stamps/stp-release-configure: CMAKE_BUILD_TYPE = Release
 stamps/stp-release-configure: BUILD_TYPE = release
 
-stamps/stp-%-configure: CONFIGURE_COMMAND = cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE) -DMINISAT_LIBRARY=$(S2EBUILD)/minisat-$(BUILD_TYPE)/libminisat.a -DMINISAT_INCLUDE_DIR=$(S2ESRC)/minisat/ -DCMAKE_C_FLAGS=-fPIC -DCMAKE_CXX_FLAGS=-fPIC $(S2ESRC)/stp/
+
+stamps/stp-%-configure: CONFIGURE_COMMAND = cmake -G "Unix Makefiles" \
+	-DCMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE) \
+	-DMINISAT_LIBRARY=$(S2EBUILD)/minisat-$(BUILD_TYPE)/libminisat.a \
+	-DMINISAT_INCLUDE_DIR=$(S2ESRC)/minisat/ \
+	-DCMAKE_C_FLAGS="-fPIC $(ASAN_FLAGS)" \
+	-DCMAKE_CXX_FLAGS="-fPIC $(ASAN_FLAGS)" \
+	-DCMAKE_MODULE_LINKER_FLAGS="$(ASAN_FLAGS)" \
+	-DCMAKE_SHARED_LINKER_FLAGS="$(ASAN_FLAGS)" \
+	-DCMAKE_C_COMPILER="$(CLANG_CC)" \
+	-DCMAKE_CXX_COMPILER="$(CLANG_CXX)" \
+	-DCMAKE_EXE_LINKER_FLAGS="$(ASAN_FLAGS)" \
+	$(S2ESRC)/stp/
 
 stamps/stp-debug-make: stamps/stp-debug-configure
+stamps/stp-asan-make: stamps/stp-asan-configure
 stamps/stp-release-make: stamps/stp-release-configure
 
 ########
 # KLEE #
 ########
 
-stamps/klee-debug-make stamps/klee-asan-debug-make stamps/klee-release-make stamps/klee-asan-release-make: ALWAYS
-
-KLEE_CONFIGURE_COMMON = --prefix=$(S2EBUILD)/opt \
-                        --with-llvmsrc=$(LLVMBUILD)/$(LLVM_SRC_DIR) \
-                        --target=x86_64 --enable-exceptions \
-                        CC=$(CLANG_CC) CXX=$(CLANG_CXX)
-
 KLEE_CONFIGURE_COMMAND = $(S2ESRC)/klee/configure
-
-KLEE_CONFIGURE_NOASAN := $(KLEE_CONFIGURE_COMMAND) \
-						$(KLEE_CONFIGURE_COMMON) \
-						--with-stp=$(S2EBUILD)/stp
 
 $(KLEE_CONFIGURE_COMMAND):
 	( cd $(S2ESRC) && $(GIT) submodule update --init klee )
 
+#stamps/klee-debug-make stamps/klee-asan-debug-make stamps/klee-release-make stamps/klee-asan-release-make: ALWAYS
 
-stamps/klee-debug-configure: stamps/stp-make stamps/llvm-debug-make $(KLEE_CONFIGURE_COMMAND)
-stamps/klee-debug-configure: CONFIGURE_COMMAND = $(KLEE_CONFIGURE_NOASAN) \
+KLEE_CONFIGURE_COMMON = --prefix=$(S2EBUILD)/opt \
+                        --with-llvmsrc=$(LLVMBUILD)/$(LLVM_SRC_DIR) \
+                        --target=x86_64 \
+						--with-uclibc="" \
+						--disable-posix-runtime \
+                        CC=$(CLANG_CC) CXX=$(CLANG_CXX)
+
+
+stamps/klee-asan-configure: ASAN_FLAGS = -fsanitize=address -fno-optimize-sibling-calls -fno-omit-frame-pointer
+stamps/klee-asan-configure: BUILD_TYPE = asan
+stamps/klee-debug-configure: BUILD_TYPE = debug
+stamps/klee-release-configure: BUILD_TYPE = release
+
+
+stamps/klee-debug-configure: stamps/stp-debug-make stamps/llvm-debug-make $(KLEE_CONFIGURE_COMMAND)
+stamps/klee-asan-configure: stamps/stp-asan-make stamps/llvm-debug-make $(KLEE_CONFIGURE_COMMAND)
+stamps/klee-release-configure: stamps/stp-release-make stamps/llvm-release-make $(KLEE_CONFIGURE_COMMAND)
+
+stamps/klee-debug-configure: CONFIGURE_COMMAND = $(KLEE_CONFIGURE_COMMAND) \
                                                  --with-llvmobj=$(LLVMBUILD)/llvm-debug \
-                                                 CXXFLAGS="-g -O0" LDFLAGS="-g"
+												 --with-stp=$(S2EBUILD)/stp-debug \
+                                                 CXXFLAGS="-g -O0 $(CXXCONFIG_CXXFLAGS)" \
+												 LDFLAGS="-g" \
+												 --with-llvm-build-mode="Debug+Asserts" \
+												 $(KLEE_CONFIGURE_COMMON)
 
-stamps/klee-release-configure: stamps/stp-make stamps/llvm-release-make $(KLEE_CONFIGURE_COMMAND)
-stamps/klee-release-configure: CONFIGURE_COMMAND = $(KLEE_CONFIGURE_NOASAN) \
-                                                   --with-llvmobj=$(LLVMBUILD)/llvm-release
+stamps/klee-asan-configure: CONFIGURE_COMMAND = $(KLEE_CONFIGURE_COMMAND) \
+                                                --with-llvmobj=$(LLVMBUILD)/llvm-debug \
+												--with-stp=$(S2EBUILD)/stp-asan \
+                                                CXXFLAGS="-g -O0 $(ASAN_FLAGS) $(CXXCONFIG_CXXFLAGS)" \
+                                                LDFLAGS="-g $(ASAN_FLAGS)" \
+                                                --with-llvm-build-mode="Debug+Asserts" \
+												$(KLEE_CONFIGURE_COMMON)
+
+stamps/klee-release-configure: CONFIGURE_COMMAND = $(KLEE_CONFIGURE_COMMAND) \
+                                                   --with-llvmobj=$(LLVMBUILD)/llvm-release \
+                                                   --with-stp=$(S2EBUILD)/stp-release \
+												   CXXFLAGS="$(CXXCONFIG_CXXFLAGS)" \
+												   --with-llvm-build-mode="Release+Asserts" \
+												   $(KLEE_CONFIGURE_COMMON)
 
 stamps/klee-debug-make: stamps/klee-debug-configure
 stamps/klee-debug-make: BUILD_OPTS = ENABLE_OPTIMIZED=0
@@ -258,35 +315,15 @@ stamps/klee-debug-make: BUILD_OPTS = ENABLE_OPTIMIZED=0
 stamps/klee-release-make: stamps/klee-release-configure
 stamps/klee-release-make: BUILD_OPTS = ENABLE_OPTIMIZED=1
 
-#ASAN-enabled KLEE
-
-KLEE_CONFIGURE_ASAN = $(KLEE_CONFIGURE_COMMAND) $(KLEE_CONFIGURE_COMMON) --with-stp=$(S2EBUILD)/stp-asan
-
-stamps/klee-asan-debug-configure: stamps/stp-asan-make stamps/llvm-debug-make $(KLEE_CONFIGURE_COMMAND)
-stamps/klee-asan-debug-configure: CONFIGURE_COMMAND = $(KLEE_CONFIGURE_ASAN) \
-                                                      --with-llvmobj=$(LLVMBUILD)/llvm-debug \
-                                                      CXXFLAGS="-g -O0 -fsanitize=address" \
-                                                      LDFLAGS="-g -fsanitize=address"
-
-stamps/klee-asan-release-configure: stamps/stp-asan-make stamps/llvm-release-make $(KLEE_CONFIGURE_COMMAND)
-stamps/klee-asan-release-configure: CONFIGURE_COMMAND = $(KLEE_CONFIGURE_ASAN) \
-                                                        --with-llvmobj=$(LLVMBUILD)/llvm-release \
-                                                        CXXFLAGS="-fsanitize=address" \
-                                                        LDFLAGS="-fsanitize=address"
-
-stamps/klee-asan-debug-make: stamps/klee-asan-debug-configure
-stamps/klee-asan-debug-make: BUILD_OPTS = ENABLE_OPTIMIZED=0
-
-stamps/klee-asan-release-make: stamps/klee-asan-release-configure
-stamps/klee-asan-release-make: BUILD_OPTS = ENABLE_OPTIMIZED=1
-
+stamps/klee-asan-make: stamps/klee-asan-configure
+stamps/klee-asan-make: BUILD_OPTS = ENABLE_OPTIMIZED=0
 
 ########
 # QEMU #
 ########
 
 #Use special include folder for c++config.h on Ubuntu 14.04
-EXTRA_QEMU_FLAGS += --extra-cflags="$(CXXCONFIG_CXXFLAGS)"
+EXTRA_QEMU_FLAGS += --extra-cflags="$(CXXCONFIG_CXXFLAGS)" --extra-cxxflags="$(CXXCONFIG_CXXFLAGS)"
 
 QEMU_S2E_ARCH =
 QEMU_S2E_ARCH += i386-s2e-softmmu i386-softmmu
@@ -308,55 +345,52 @@ QEMU_COMMON_FLAGS = --prefix=$(S2EBUILD)/opt\
                     --enable-s2e \
                     --with-pkgversion=S2E \
                     --disable-virtfs \
-                    $(EXTRA_QEMU_FLAGS)
+					--with-klee-src=$(S2ESRC)/klee
 
-QEMU_CONFIGURE_FLAGS = --with-stp=$(S2EBUILD)/stp \
-                       --clang=$(CLANG_CC) \
+QEMU_CONFIGURE_FLAGS = --clang=$(CLANG_CC) \
                        $(QEMU_COMMON_FLAGS)
-
-QEMU_DEBUG_FLAGS = --with-llvm-config=$(LLVMBUILD)/llvm-debug/Debug+Asserts/bin/llvm-config \
-                   --with-klee=$(S2EBUILD)/klee-debug/Debug+Asserts \
-                   --enable-debug \
-
-QEMU_RELEASE_FLAGS = --with-llvm-config=$(LLVMBUILD)/llvm-release/Release+Asserts/bin/llvm-config \
-                     --with-klee=$(S2EBUILD)/klee-release/Release+Asserts \
-
 
 $(QEMU_CONFIGURE_COMMAND):
 	( cd $(S2ESRC) && $(GIT) submodule update --init qemu )
 
-stamps/qemu-debug-configure: stamps/klee-debug-make $(QEMU_CONFIGURE_COMMAND)
-stamps/qemu-debug-configure: CONFIGURE_COMMAND = $(QEMU_CONFIGURE_COMMAND) \
-                                                 $(QEMU_DEBUG_FLAGS) \
-                                                 $(QEMU_CONFIGURE_FLAGS)
+QEMU_ASAN_FLAGS = -fstack-protector-all -Wno-mismatched-tags -fsanitize=address \
+                  -fno-optimize-sibling-calls -fno-omit-frame-pointer
 
+stamps/qemu-debug-configure: stamps/klee-debug-make $(QEMU_CONFIGURE_COMMAND)
+stamps/qemu-asan-configure: stamps/klee-asan-make $(QEMU_CONFIGURE_COMMAND)
 stamps/qemu-release-configure: stamps/klee-release-make $(QEMU_CONFIGURE_COMMAND)
+
+stamps/qemu-debug-configure: CONFIGURE_COMMAND = $(QEMU_CONFIGURE_COMMAND) \
+                                                 $(QEMU_CONFIGURE_FLAGS) \
+                                                 --with-llvm-config=$(LLVMBUILD)/llvm-debug/Debug+Asserts/bin/llvm-config \
+												 --with-stp=$(S2EBUILD)/stp-debug/ \
+                                                 --with-klee=$(S2EBUILD)/klee-debug/Debug+Asserts \
+                                                 --enable-debug \
+                                                 --extra-cflags="$(CXXCONFIG_CXXFLAGS)" \
+												 --extra-cxxflags="$(CXXCONFIG_CXXFLAGS)" 
+
+stamps/qemu-asan-configure: CONFIGURE_COMMAND = $(QEMU_CONFIGURE_COMMAND) \
+                                                $(QEMU_CONFIGURE_FLAGS) \
+												--with-stp=$(S2EBUILD)/stp-debug/ \
+                                                --with-llvm-config=$(LLVMBUILD)/llvm-debug/Debug+Asserts/bin/llvm-config \
+                                                --with-klee=$(S2EBUILD)/klee-asan/Debug+Asserts \
+                                                --enable-debug \
+                                                --extra-cflags="$(CXXCONFIG_CXXFLAGS) $(QEMU_ASAN_FLAGS)" \
+												--extra-cxxflags="$(CXXCONFIG_CXXFLAGS) $(QEMU_ASAN_FLAGS)" \
+												--extra-ldflags="$(QEMU_ASAN_FLAGS)" 
+
+
 stamps/qemu-release-configure: CONFIGURE_COMMAND = $(QEMU_CONFIGURE_COMMAND) \
-                                                   $(QEMU_RELEASE_FLAGS) \
-                                                   $(QEMU_CONFIGURE_FLAGS)
+                                                   $(QEMU_CONFIGURE_FLAGS) \
+												   --with-stp=$(S2EBUILD)/stp-debug/ \
+                                                   --with-llvm-config=$(LLVMBUILD)/llvm-release/Release+Asserts/bin/llvm-config \
+                                                   --with-klee=$(S2EBUILD)/klee-release/Release+Asserts \
+                                                   --extra-cflags="$(CXXCONFIG_CXXFLAGS)" \
+												   --extra-cxxflags="$(CXXCONFIG_CXXFLAGS)" 
 
 stamps/qemu-debug-make: stamps/qemu-debug-configure
+stamps/qemu-asan-make: stamps/qemu-asan-configure
 stamps/qemu-release-make: stamps/qemu-release-configure
-
-#ASAN-enabled QEMU
-QEMU_ASAN_FLAGS = --enable-address-sanitizer \
-                  --with-stp=$(S2EBUILD)/stp-asan \
-                  $(QEMU_COMMON_FLAGS)
-
-stamps/qemu-asan-debug-configure: stamps/klee-asan-debug-make $(QEMU_CONFIGURE_COMMAND)
-stamps/qemu-asan-debug-configure: CONFIGURE_COMMAND = $(QEMU_CONFIGURE_COMMAND) \
-                                                      --with-klee=$(S2EBUILD)/klee-asan-debug/Debug+Asserts \
-                                                      $(QEMU_DEBUG_FLAGS) \
-                                                      $(QEMU_ASAN_FLAGS)
-
-stamps/qemu-asan-release-configure: stamps/klee-asan-release-make $(QEMU_CONFIGURE_COMMAND)
-stamps/qemu-asan-release-configure: CONFIGURE_COMMAND = $(QEMU_CONFIGURE_COMMAND) \
-                                                        --with-klee=$(S2EBUILD)/klee-asan-release/Release+Asserts \
-                                                        $(QEMU_RELEASE_FLAGS) \
-                                                        $(QEMU_ASAN_FLAGS)
-
-stamps/qemu-asan-debug-make: stamps/qemu-asan-debug-configure
-stamps/qemu-asan-release-make: stamps/qemu-asan-release-configure
 
 #########
 # Tools #
