@@ -266,7 +266,7 @@ KLEE_CONFIGURE_COMMAND = $(S2ESRC)/klee/configure
 $(KLEE_CONFIGURE_COMMAND):
 	( cd $(S2ESRC) && $(GIT) submodule update --init klee )
 
-#stamps/klee-debug-make stamps/klee-asan-debug-make stamps/klee-release-make stamps/klee-asan-release-make: ALWAYS
+stamps/klee-debug-make stamps/klee-asan-make stamps/klee-release-make: ALWAYS
 
 KLEE_CONFIGURE_COMMON = --prefix=$(S2EBUILD)/opt \
                         --with-llvmsrc=$(LLVMBUILD)/$(LLVM_SRC_DIR) \
