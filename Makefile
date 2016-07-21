@@ -50,15 +50,15 @@ ifeq ($(wildcard qemu/vl.c),qemu/vl.c)
 endif
 
 
-LLVM_VERSION=3.2
+LLVM_VERSION=3.4
 LLVM_SRC=llvm-$(LLVM_VERSION).src.tar.gz
-LLVM_SRC_DIR=llvm-$(LLVM_VERSION).src
+LLVM_SRC_DIR=llvm-$(LLVM_VERSION)
 LLVM_NATIVE_SRC_DIR=llvm-$(LLVM_VERSION).src.native
 CLANG_SRC=clang-$(LLVM_VERSION).src.tar.gz
-CLANG_SRC_DIR=clang-$(LLVM_VERSION).src
+CLANG_SRC_DIR=clang-$(LLVM_VERSION)
 CLANG_DEST_DIR=$(LLVM_NATIVE_SRC_DIR)/tools/clang
 COMPILER_RT_SRC=compiler-rt-$(LLVM_VERSION).src.tar.gz
-COMPILER_RT_SRC_DIR=compiler-rt-$(LLVM_VERSION).src
+COMPILER_RT_SRC_DIR=compiler-rt-$(LLVM_VERSION)
 COMPILER_RT_DEST_DIR=$(LLVM_NATIVE_SRC_DIR)/projects/compiler-rt
 GIT ?= git
 
@@ -100,20 +100,6 @@ stamps/%-make:
 	$(MAKE) -C $* $(BUILD_OPTS)
 	touch $@
 
-# On Ubuntu 14.04, c++config.h is located in a platform-specific path
-CXXCONFIG_INCLUDE_PATH := /usr/include/x86_64-linux-gnu/c++/4.8
-CDEFS_INCLUDE_PATH := /usr/include/x86_64-linux-gnu
-ifneq (,$(wildcard $(CXXCONFIG_INCLUDE_PATH)/c++config.h) $(wildcard $(CXXCONFIG_INCLUDE_PATH)/bits/c++config.h))
-CXXCONFIG_CXXFLAGS := -I$(CXXCONFIG_INCLUDE_PATH)
-CPLUS_INCLUDE_PATH := $(CXXCONFIG_INCLUDE_PATH):$(CDEFS_INCLUDE_PATH)
-C_INCLUDE_PATH := $(CXXCONFIG_INCLUDE_PATH):$(CDEFS_INCLUDE_PATH)
-export CPLUS_INCLUDE_PATH
-export C_INCLUDE_PATH
-else
-CXXCONFIG_CXXFLAGS :=
-CXXCONFIG_INCLUDE_PATH :=
-endif
-
 #############
 # Downloads #
 #############
@@ -129,8 +115,8 @@ $(CLANG_SRC) $(COMPILER_RT_SRC) $(LLVM_SRC):
 $(CLANG_SRC_DIR): $(CLANG_SRC)
 $(COMPILER_RT_SRC_DIR): $(COMPILER_RT_SRC)
 $(LLVM_SRC_DIR): $(LLVM_SRC)
-	tar -xmzf $<
 	( cd $(LLVM_SRC_DIR) && patch -p1 < $(S2ESRC)/patches/llvm_system_error_h_cast.patch )
+	tar -xmzf $<
 
 $(CLANG_SRC_DIR) $(COMPILER_RT_SRC_DIR):
 	tar -xmzf $<
@@ -211,7 +197,9 @@ stamps/minisat-%-configure: CONFIGURE_COMMAND = cmake -G "Unix Makefiles" \
 	-DCMAKE_CXX_COMPILER="$(CLANG_CXX)" \
 	$(S2ESRC)/minisat/ 
 
-stamps/minisat-%-configure: $(S2ESRC)/minisat/CMakeLists.txt
+stamps/minisat-debug-configure: $(S2ESRC)/minisat/CMakeLists.txt stamps/llvm-native-make
+stamps/minisat-asan-configure: $(S2ESRC)/minisat/CMakeLists.txt stamps/llvm-native-make
+stamps/minisat-release-configure: $(S2ESRC)/minisat/CMakeLists.txt stamps/llvm-native-make
 
 stamps/minisat-debug-make: stamps/minisat-debug-configure
 stamps/minisat-asan-make: stamps/minisat-asan-configure
@@ -240,7 +228,7 @@ stamps/stp-release-configure: CMAKE_BUILD_TYPE = Release
 stamps/stp-release-configure: BUILD_TYPE = release
 
 
-stamps/stp-%-configure: CONFIGURE_COMMAND = cmake -G "Unix Makefiles" \
+stamps/stp-asan-configure: CONFIGURE_COMMAND = cmake -G "Unix Makefiles" \
 	-DCMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE) \
 	-DMINISAT_LIBRARY=$(S2EBUILD)/minisat-$(BUILD_TYPE)/libminisat.a \
 	-DMINISAT_INCLUDE_DIR=$(S2ESRC)/minisat/ \
@@ -248,9 +236,36 @@ stamps/stp-%-configure: CONFIGURE_COMMAND = cmake -G "Unix Makefiles" \
 	-DCMAKE_CXX_FLAGS="-fPIC $(ASAN_FLAGS)" \
 	-DCMAKE_MODULE_LINKER_FLAGS="$(ASAN_FLAGS)" \
 	-DCMAKE_SHARED_LINKER_FLAGS="$(ASAN_FLAGS)" \
+	-DCMAKE_EXE_LINKER_FLAGS="$(ASAN_FLAGS)" \
 	-DCMAKE_C_COMPILER="$(CLANG_CC)" \
 	-DCMAKE_CXX_COMPILER="$(CLANG_CXX)" \
 	-DCMAKE_EXE_LINKER_FLAGS="$(ASAN_FLAGS)" \
+	-DBUILD_STATIC_BIN=OFF \
+	-DBUILD_SHARED_LIBS=ON \
+	$(S2ESRC)/stp/
+
+stamps/stp-debug-configure: CONFIGURE_COMMAND = cmake -G "Unix Makefiles" \
+	-DCMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE) \
+	-DMINISAT_LIBRARY=$(S2EBUILD)/minisat-$(BUILD_TYPE)/libminisat.a \
+	-DMINISAT_INCLUDE_DIR=$(S2ESRC)/minisat/ \
+	-DCMAKE_C_FLAGS="-fPIC" \
+	-DCMAKE_CXX_FLAGS="-fPIC" \
+	-DCMAKE_C_COMPILER="$(CLANG_CC)" \
+	-DCMAKE_CXX_COMPILER="$(CLANG_CXX)" \
+	-DBUILD_STATIC_BIN=ON \
+	-DBUILD_SHARED_LIBS=OFF \
+	$(S2ESRC)/stp/
+
+stamps/stp-release-configure: CONFIGURE_COMMAND = cmake -G "Unix Makefiles" \
+	-DCMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE) \
+	-DMINISAT_LIBRARY=$(S2EBUILD)/minisat-$(BUILD_TYPE)/libminisat.a \
+	-DMINISAT_INCLUDE_DIR=$(S2ESRC)/minisat/ \
+	-DCMAKE_C_FLAGS="-fPIC" \
+	-DCMAKE_CXX_FLAGS="-fPIC" \
+	-DCMAKE_C_COMPILER="$(CLANG_CC)" \
+	-DCMAKE_CXX_COMPILER="$(CLANG_CXX)" \
+	-DBUILD_STATIC_BIN=ON \
+	-DBUILD_SHARED_LIBS=OFF \
 	$(S2ESRC)/stp/
 
 stamps/stp-debug-make: stamps/stp-debug-configure
@@ -266,7 +281,7 @@ KLEE_CONFIGURE_COMMAND = $(S2ESRC)/klee/configure
 $(KLEE_CONFIGURE_COMMAND):
 	( cd $(S2ESRC) && $(GIT) submodule update --init klee )
 
-stamps/klee-debug-make stamps/klee-asan-make stamps/klee-release-make: ALWAYS
+#stamps/klee-debug-make stamps/klee-asan-debug-make stamps/klee-release-make stamps/klee-asan-release-make: ALWAYS
 
 KLEE_CONFIGURE_COMMON = --prefix=$(S2EBUILD)/opt \
                         --with-llvmsrc=$(LLVMBUILD)/$(LLVM_SRC_DIR) \
@@ -290,7 +305,7 @@ stamps/klee-debug-configure: CONFIGURE_COMMAND = $(KLEE_CONFIGURE_COMMAND) \
                                                  --with-llvmobj=$(LLVMBUILD)/llvm-debug \
 												 --with-stp=$(S2EBUILD)/stp-debug \
                                                  CXXFLAGS="-g -O0 $(CXXCONFIG_CXXFLAGS)" \
-												 LDFLAGS="-g" \
+												 LDFLAGS="-g -L$(S2EBUILD)/minisat-debug" \
 												 --with-llvm-build-mode="Debug+Asserts" \
 												 $(KLEE_CONFIGURE_COMMON)
 
@@ -298,7 +313,7 @@ stamps/klee-asan-configure: CONFIGURE_COMMAND = $(KLEE_CONFIGURE_COMMAND) \
                                                 --with-llvmobj=$(LLVMBUILD)/llvm-debug \
 												--with-stp=$(S2EBUILD)/stp-asan \
                                                 CXXFLAGS="-g -O0 $(ASAN_FLAGS) $(CXXCONFIG_CXXFLAGS)" \
-                                                LDFLAGS="-g $(ASAN_FLAGS)" \
+                                                LDFLAGS="-g $(ASAN_FLAGS) -L$(S2EBUILD)/minisat-asan" \
                                                 --with-llvm-build-mode="Debug+Asserts" \
 												$(KLEE_CONFIGURE_COMMON)
 
@@ -306,6 +321,7 @@ stamps/klee-release-configure: CONFIGURE_COMMAND = $(KLEE_CONFIGURE_COMMAND) \
                                                    --with-llvmobj=$(LLVMBUILD)/llvm-release \
                                                    --with-stp=$(S2EBUILD)/stp-release \
 												   CXXFLAGS="$(CXXCONFIG_CXXFLAGS)" \
+												   LDFLAGS="-L$(S2EBUILD)/minisat-release" \
 												   --with-llvm-build-mode="Release+Asserts" \
 												   $(KLEE_CONFIGURE_COMMON)
 
@@ -371,7 +387,7 @@ stamps/qemu-debug-configure: CONFIGURE_COMMAND = $(QEMU_CONFIGURE_COMMAND) \
 
 stamps/qemu-asan-configure: CONFIGURE_COMMAND = $(QEMU_CONFIGURE_COMMAND) \
                                                 $(QEMU_CONFIGURE_FLAGS) \
-												--with-stp=$(S2EBUILD)/stp-debug/ \
+												--with-stp=$(S2EBUILD)/stp-asan/ \
                                                 --with-llvm-config=$(LLVMBUILD)/llvm-debug/Debug+Asserts/bin/llvm-config \
                                                 --with-klee=$(S2EBUILD)/klee-asan/Debug+Asserts \
                                                 --enable-debug \
