@@ -380,29 +380,32 @@ stamps/qemu-debug-configure: CONFIGURE_COMMAND = $(QEMU_CONFIGURE_COMMAND) \
                                                  $(QEMU_CONFIGURE_FLAGS) \
                                                  --with-llvm-config=$(LLVMBUILD)/llvm-debug/Debug+Asserts/bin/llvm-config \
 												 --with-stp=$(S2EBUILD)/stp-debug/ \
-                                                 --with-klee=$(S2EBUILD)/klee-debug/Debug+Asserts \
-                                                 --enable-debug \
-                                                 --extra-cflags="$(CXXCONFIG_CXXFLAGS)" \
-												 --extra-cxxflags="$(CXXCONFIG_CXXFLAGS)" 
+												 --with-klee=$(S2EBUILD)/klee-debug/Debug+Asserts \
+												 --enable-debug \
+												 --extra-cflags="$(CXXCONFIG_CXXFLAGS)" \
+												 --extra-cxxflags="$(CXXCONFIG_CXXFLAGS)" \
+												 --with-minisat="$(S2EBUILD)/minisat-debug"
 
 stamps/qemu-asan-configure: CONFIGURE_COMMAND = $(QEMU_CONFIGURE_COMMAND) \
                                                 $(QEMU_CONFIGURE_FLAGS) \
 												--with-stp=$(S2EBUILD)/stp-asan/ \
-                                                --with-llvm-config=$(LLVMBUILD)/llvm-debug/Debug+Asserts/bin/llvm-config \
-                                                --with-klee=$(S2EBUILD)/klee-asan/Debug+Asserts \
-                                                --enable-debug \
-                                                --extra-cflags="$(CXXCONFIG_CXXFLAGS) $(QEMU_ASAN_FLAGS)" \
+												--with-llvm-config=$(LLVMBUILD)/llvm-debug/Debug+Asserts/bin/llvm-config \
+												--with-klee=$(S2EBUILD)/klee-asan/Debug+Asserts \
+												--enable-debug \
+												--extra-cflags="$(CXXCONFIG_CXXFLAGS) $(QEMU_ASAN_FLAGS)" \
 												--extra-cxxflags="$(CXXCONFIG_CXXFLAGS) $(QEMU_ASAN_FLAGS)" \
-												--extra-ldflags="$(QEMU_ASAN_FLAGS)" 
+												--extra-ldflags="$(QEMU_ASAN_FLAGS)"  \
+												--with-minisat="$(S2EBUILD)/minisat-asan"
 
 
 stamps/qemu-release-configure: CONFIGURE_COMMAND = $(QEMU_CONFIGURE_COMMAND) \
-                                                   $(QEMU_CONFIGURE_FLAGS) \
+												   $(QEMU_CONFIGURE_FLAGS) \
 												   --with-stp=$(S2EBUILD)/stp-debug/ \
-                                                   --with-llvm-config=$(LLVMBUILD)/llvm-release/Release+Asserts/bin/llvm-config \
-                                                   --with-klee=$(S2EBUILD)/klee-release/Release+Asserts \
-                                                   --extra-cflags="$(CXXCONFIG_CXXFLAGS)" \
-												   --extra-cxxflags="$(CXXCONFIG_CXXFLAGS)" 
+												   --with-llvm-config=$(LLVMBUILD)/llvm-release/Release+Asserts/bin/llvm-config \
+												   --with-klee=$(S2EBUILD)/klee-release/Release+Asserts \
+												   --extra-cflags="$(CXXCONFIG_CXXFLAGS)" \
+												   --extra-cxxflags="$(CXXCONFIG_CXXFLAGS)" \
+												   --with-minisat="$(S2EBUILD)/minisat-release"
 
 stamps/qemu-debug-make: stamps/qemu-debug-configure
 stamps/qemu-asan-make: stamps/qemu-asan-configure
