@@ -307,6 +307,7 @@ stamps/klee-debug-configure: CONFIGURE_COMMAND = $(KLEE_CONFIGURE_COMMAND) \
 												 LDFLAGS="-L$(S2EBUILD)/minisat-debug" \
 												 --with-llvm-build-mode="Debug+Asserts" \
 												 --with-runtime="Debug+Asserts" \
+												 --enable-debug \
 												 $(KLEE_CONFIGURE_COMMON)
 
 stamps/klee-asan-configure: CONFIGURE_COMMAND = $(KLEE_CONFIGURE_COMMAND) \
@@ -316,6 +317,7 @@ stamps/klee-asan-configure: CONFIGURE_COMMAND = $(KLEE_CONFIGURE_COMMAND) \
                                                 LDFLAGS="$(ASAN_FLAGS) -L$(S2EBUILD)/minisat-asan" \
                                                 --with-llvm-build-mode="Debug+Asserts" \
                                                 --with-runtime="Debug+Asserts" \
+                                                --enable-debug \
 												$(KLEE_CONFIGURE_COMMON)
 
 stamps/klee-release-configure: CONFIGURE_COMMAND = $(KLEE_CONFIGURE_COMMAND) \
@@ -327,13 +329,13 @@ stamps/klee-release-configure: CONFIGURE_COMMAND = $(KLEE_CONFIGURE_COMMAND) \
 												   $(KLEE_CONFIGURE_COMMON)
 
 stamps/klee-debug-make: stamps/klee-debug-configure
-stamps/klee-debug-make: BUILD_OPTS = ENABLE_OPTIMIZED=0
+stamps/klee-debug-make: BUILD_OPTS = ENABLE_OPTIMIZED=0 DISABLE_ASSERTIONS=0
 
 stamps/klee-release-make: stamps/klee-release-configure
-stamps/klee-release-make: BUILD_OPTS = ENABLE_OPTIMIZED=1
+stamps/klee-release-make: BUILD_OPTS = ENABLE_OPTIMIZED=1 DISABLE_ASSERTIONS=0
 
 stamps/klee-asan-make: stamps/klee-asan-configure
-stamps/klee-asan-make: BUILD_OPTS = ENABLE_OPTIMIZED=0
+stamps/klee-asan-make: BUILD_OPTS = ENABLE_OPTIMIZED=0 DISABLE_ASSERTIONS=0
 
 ########
 # QEMU #
