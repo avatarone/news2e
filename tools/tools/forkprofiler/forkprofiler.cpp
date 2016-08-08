@@ -42,7 +42,7 @@
 #include <lib/ExecutionTracer/TestCase.h>
 #include <lib/BinaryReaders/BFDInterface.h>
 
-#include <s2e/Plugins/ExecutionTracers/TraceEntries.h>
+#include <include/s2e/Plugins/ExecutionTracers/TraceEntries.h>
 
 #include <stdio.h>
 #include <ostream>

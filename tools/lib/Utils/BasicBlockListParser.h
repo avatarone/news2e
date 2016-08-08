@@ -36,6 +36,7 @@
 #ifndef S2ETOOLS_BBLP_H
 #define S2ETOOLS_BBLP_H
 
+#include <set>
 #include <llvm/Support/Path.h>
 
 namespace s2etools
@@ -77,7 +78,7 @@ class BasicBlockListParser {
 public:
     typedef std::set<BasicBlock, BasicBlock> BasicBlocks;
 
-    static bool parseListing(llvm::sys::Path &listing, BasicBlocks &blocks);
+    static bool parseListing(llvm::SmallString<256> &listing, BasicBlocks &blocks);
 
 };
 

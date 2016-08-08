@@ -36,7 +36,7 @@
 #ifndef S2ETOOLS_EXECTRACER_ICOUNT_H
 #define S2ETOOLS_EXECTRACER_ICOUNT_H
 
-#include <s2e/Plugins/ExecutionTracers/TraceEntries.h>
+#include <include/s2e/Plugins/ExecutionTracers/TraceEntries.h>
 #include "LogParser.h"
 
 namespace s2etools {

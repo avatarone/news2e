@@ -121,7 +121,7 @@ TbTrace::~TbTrace()
 bool TbTrace::parseDisassembly(const std::string &listingFile, Disassembly &out)
 {
     //Get the module name
-    llvm::sys::Path listingFilePath(listingFile);
+    llvm::SmallString<256> listingFilePath(listingFile);
     std::string moduleName = llvm::sys::path::stem(listingFilePath.str());
 
     bool added = false;
@@ -166,7 +166,7 @@ void TbTrace::printDisassembly(const std::string &module, uint64_t relPc, unsign
 {
     Disassembly::iterator it = m_disassembly.find(module);
     if (it == m_disassembly.end()) {
-        llvm::sys::Path disassemblyListing;
+        llvm::SmallString<256> disassemblyListing;
         if (!m_library->findDisassemblyListing(module, disassemblyListing)) {
             std::cerr << "Could not find disassembly listing for module "
                          << module << std::endl;
@@ -183,7 +183,7 @@ void TbTrace::printDisassembly(const std::string &module, uint64_t relPc, unsign
     //Fetch the basic blocks for our module
     ModuleBasicBlocks::iterator bbit = m_basicBlocks.find(module);
     if (bbit == m_basicBlocks.end()) {
-        llvm::sys::Path basicBlockList;
+        llvm::SmallString<256> basicBlockList;
 
         if (!m_library->findBasicBlockList(module, basicBlockList)) {
             std::cerr << "TbTrace: could not find basic block list for  "
@@ -195,7 +195,7 @@ void TbTrace::printDisassembly(const std::string &module, uint64_t relPc, unsign
 
         if (!BasicBlockListParser::parseListing(basicBlockList, moduleBbs)) {
             std::cerr << "TbTrace: could not parse basic block list in file "
-                      << basicBlockList.str() << std::endl;
+                      << basicBlockList.c_str() << std::endl;
             exit(-1);
         }
 

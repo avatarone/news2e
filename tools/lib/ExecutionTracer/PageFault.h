@@ -36,7 +36,7 @@
 #ifndef S2ETOOLS_EXECTRACER_PageFault_H
 #define S2ETOOLS_EXECTRACER_PageFault_H
 
-#include <s2e/Plugins/ExecutionTracers/TraceEntries.h>
+#include <include/s2e/Plugins/ExecutionTracers/TraceEntries.h>
 #include "LogParser.h"
 #include "ModuleParser.h"
 

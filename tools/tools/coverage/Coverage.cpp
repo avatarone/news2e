@@ -46,7 +46,7 @@
 #include <lib/BinaryReaders/BFDInterface.h>
 
 
-#include <s2e/Plugins/ExecutionTracers/TraceEntries.h>
+#include <include/s2e/Plugins/ExecutionTracers/TraceEntries.h>
 
 #include <stdio.h>
 #include <ostream>
@@ -89,12 +89,12 @@ namespace s2etools
 BasicBlockCoverage::BasicBlockCoverage(const std::string &moduleDir,
            const std::string &moduleName)
 {
-    llvm::sys::Path basicBlockListFile(moduleDir);
-    basicBlockListFile.appendComponent(moduleName + ".bblist");
+    llvm::SmallString<256> basicBlockListFile(moduleDir);
+    llvm::sys::path::append(basicBlockListFile, moduleName + ".bblist");
 
-    FILE *fp = fopen(basicBlockListFile.str().c_str(), "r");
+    FILE *fp = fopen(basicBlockListFile.c_str(), "r");
     if (!fp) {
-        std::cerr << "Could not open file " << basicBlockListFile.str() << std::endl;
+        std::cerr << "Could not open file " << basicBlockListFile.c_str() << std::endl;
         return;
     }
 
@@ -137,12 +137,12 @@ BasicBlockCoverage::BasicBlockCoverage(const std::string &moduleDir,
 void BasicBlockCoverage::parseExcludeFile(const std::string &moduleDir,
                                           const std::string &moduleName)
 {
-    llvm::sys::Path excludeFileName(moduleDir);
-    excludeFileName.appendComponent(moduleName + ".excl");
+    llvm::SmallString<256> excludeFileName(moduleDir);
+    llvm::sys::path::append(excludeFileName, moduleDir + ".excl");
 
-    FILE *fp = fopen(excludeFileName.str().c_str(), "r");
+    FILE *fp = fopen(excludeFileName.c_str(), "r");
     if (!fp) {
-        std::cerr << "Could not open file " << excludeFileName.str() << std::endl;
+        std::cerr << "Could not open file " << excludeFileName.c_str() << std::endl;
         return;
     }
 
@@ -414,8 +414,9 @@ BasicBlockCoverage *Coverage::loadCoverage(const ModuleInstance *mi)
         //Look for the file containing the bbs.
         std::string path;
         if (m_library->findLibrary(mi->Name, path)) {
-            llvm::sys::Path modPath(path);
-            modPath.eraseComponent();
+            llvm::SmallString<256> temp(path);
+            //modPath.eraseComponent();
+            llvm::SmallString<256> modPath(llvm::sys::path::parent_path(temp.str()));
             BasicBlockCoverage *bb = new BasicBlockCoverage(modPath.str(), mi->Name);
             m_bbCov[mi->Name] = bb;
             bbcov = bb;

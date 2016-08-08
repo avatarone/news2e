@@ -47,6 +47,9 @@ extern "C" {
 #include <inttypes.h>
 
 #include "ExecutableFile.h"
+
+#undef PTR
+
 #include <llvm/Support/MemoryBuffer.h>
 #include <llvm/ADT/OwningPtr.h>
 

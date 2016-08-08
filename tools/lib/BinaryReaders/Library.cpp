@@ -90,13 +90,10 @@ bool Library::findLibrary(const std::string &libName, std::string &abspath)
     PathList::const_iterator it;
 
     for (it = m_libpath.begin(); it != m_libpath.end(); ++it) {
-        llvm::sys::Path lib(*it);
-        lib.appendComponent(libName);
+        llvm::SmallString<256> lib(*it);
+        llvm::sys::path::append(lib, libName);
 
-        bool exists = false;
-        llvm::sys::fs::exists(lib.str(), exists);
-
-        if (exists) {
+        if (llvm::sys::fs::exists(lib.str())) {
             abspath = lib.str();
             return true;
         }
@@ -104,18 +101,15 @@ bool Library::findLibrary(const std::string &libName, std::string &abspath)
     return false;
 }
 
-bool Library::findSuffixedModule(const std::string &moduleName, const std::string &suffix, llvm::sys::Path &path)
+bool Library::findSuffixedModule(const std::string &moduleName, const std::string &suffix, llvm::SmallString<256> &path)
 {
     PathList::const_iterator it;
 
     for (it = m_libpath.begin(); it != m_libpath.end(); ++it) {
-        llvm::sys::Path list(*it);
-        list.appendComponent(moduleName);
-        list.appendSuffix(suffix);
+        llvm::SmallString<256> list(*it);
+        llvm::sys::path::append(list, moduleName + "." + suffix);
 
-        bool exists = false;
-        llvm::sys::fs::exists(list.str(), exists);
-        if (exists) {
+        if (llvm::sys::fs::exists(list.str())) {
             path = list;
             return true;
         }
@@ -123,12 +117,12 @@ bool Library::findSuffixedModule(const std::string &moduleName, const std::strin
     return false;
 }
 
-bool Library::findBasicBlockList(const std::string &moduleName, llvm::sys::Path &path)
+bool Library::findBasicBlockList(const std::string &moduleName, llvm::SmallString<256> &path)
 {
     return findSuffixedModule(moduleName, "bblist", path);
 }
 
-bool Library::findDisassemblyListing(const std::string &moduleName, llvm::sys::Path &path)
+bool Library::findDisassemblyListing(const std::string &moduleName, llvm::SmallString<256> &path)
 {
     return findSuffixedModule(moduleName, "lst", path);
 }

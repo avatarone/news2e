@@ -33,7 +33,7 @@
  * All contributors are listed in the S2E-AUTHORS file.
  */
 
-#include <s2e/Plugins/ExecutionTracers/TraceEntries.h>
+#include <include/s2e/Plugins/ExecutionTracers/TraceEntries.h>
 #include <cassert>
 #include <stack>
 #include <ostream>

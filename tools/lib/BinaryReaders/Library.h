@@ -75,9 +75,9 @@ public:
     bool getInfo(const ModuleInstance *ni, uint64_t pc, std::string &file, uint64_t &line, std::string &func);
 
     bool findLibrary(const std::string &libName, std::string &abspath);
-    bool findSuffixedModule(const std::string &moduleName, const std::string &suffix, llvm::sys::Path &path);
-    bool findBasicBlockList(const std::string &moduleName, llvm::sys::Path &path);
-    bool findDisassemblyListing(const std::string &moduleName, llvm::sys::Path &path);
+    bool findSuffixedModule(const std::string &moduleName, const std::string &suffix, llvm::SmallString<256> &path);
+    bool findBasicBlockList(const std::string &moduleName, llvm::SmallString<256> &path);
+    bool findDisassemblyListing(const std::string &moduleName, llvm::SmallString<256> &path);
 
 
 

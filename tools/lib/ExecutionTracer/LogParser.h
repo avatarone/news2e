@@ -38,7 +38,7 @@
 
 #include <string>
 #include <lib/Utils/Signals/Signals.h>
-#include <s2e/Plugins/ExecutionTracers/TraceEntries.h>
+#include <include/s2e/Plugins/ExecutionTracers/TraceEntries.h>
 #include <stdio.h>
 #include <vector>
 #include <map>

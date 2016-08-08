@@ -44,7 +44,7 @@
 #include <lib/BinaryReaders/BFDInterface.h>
 #include <lib/BinaryReaders/Library.h>
 
-#include <s2e/Plugins/ExecutionTracers/TraceEntries.h>
+#include <include/s2e/Plugins/ExecutionTracers/TraceEntries.h>
 
 #include <stdio.h>
 #include <ostream>

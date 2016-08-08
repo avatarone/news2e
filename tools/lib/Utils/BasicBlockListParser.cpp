@@ -45,7 +45,7 @@
 namespace s2etools
 {
 
-bool BasicBlockListParser::parseListing(llvm::sys::Path &listingFile, BasicBlocks &blocks)
+bool BasicBlockListParser::parseListing(llvm::SmallString<256> &listingFile, BasicBlocks &blocks)
 {
     std::filebuf file;
     if (!file.open(listingFile.c_str(), std::ios::in)) {
