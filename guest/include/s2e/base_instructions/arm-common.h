@@ -49,6 +49,10 @@ MAKE_S2E_FUNCTION_WITH_ASM(s2e_print_expression, 0x07, void, "mov r2, r1", int e
 MAKE_S2E_FUNCTION(s2e_print_memory, 0x08, void, void* address, unsigned size, const char* name)
 MAKE_S2E_FUNCTION(s2e_enable_forking, 0x09, void, void)
 MAKE_S2E_FUNCTION(s2e_disable_forking, 0x0A, void, void)
+/**
+ * Is S2E forced to always run in KLEE? 
+ */
+MAKE_S2E_FUNCTION(s2e_is_running_symbolic, 0xE, int, void)
 MAKE_S2E_FUNCTION(s2e_message, 0x10, void, const char* message)
 MAKE_S2E_FUNCTION(s2e_make_concolic, 0x11, void, void* address, unsigned size, const char* name)
 MAKE_S2E_FUNCTION(s2e_concretize, 0x20, void, void* address, unsigned size)
