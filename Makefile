@@ -175,8 +175,10 @@ endif
 # Minisat #
 ###########
 
+MINISAT_CMAKE_FILE := $(S2ESRC)/minisat/CMakeLists.txt
 
-$(S2ESRC)/minisat/CMakeLists.txt:
+
+$(MINISAT_CMAKE_FILE):
 	( cd $(S2ESRC) && $(GIT) submodule update --init minisat )
 
 stamps/minisat-debug-configure: CMAKE_BUILD_TYPE = Debug
@@ -197,9 +199,9 @@ stamps/minisat-%-configure: CONFIGURE_COMMAND = cmake -G "Unix Makefiles" \
 	-DCMAKE_CXX_COMPILER="$(CLANG_CXX)" \
 	$(S2ESRC)/minisat/ 
 
-stamps/minisat-debug-configure: $(S2ESRC)/minisat/CMakeLists.txt stamps/llvm-native-make
-stamps/minisat-asan-configure: $(S2ESRC)/minisat/CMakeLists.txt stamps/llvm-native-make
-stamps/minisat-release-configure: $(S2ESRC)/minisat/CMakeLists.txt stamps/llvm-native-make
+stamps/minisat-debug-configure: $(MINISAT_CMAKE_FILE) stamps/llvm-native-make
+stamps/minisat-asan-configure: $(MINISAT_CMAKE_FILE) stamps/llvm-native-make
+stamps/minisat-release-configure: $(MINISAT_CMAKE_FILE) stamps/llvm-native-make
 
 stamps/minisat-debug-make: stamps/minisat-debug-configure
 stamps/minisat-asan-make: stamps/minisat-asan-configure
@@ -209,12 +211,14 @@ stamps/minisat-release-make: stamps/minisat-release-configure
 # STP #
 #######
 
-$(S2ESRC)/stp/CMakeLists.txt:
+STP_CMAKE_FILE := $(S2ESRC)/stp/CMakeLists.txt
+
+$(STP_CMAKE_FILE):
 	( cd $(S2ESRC) && $(GIT) submodule update --init stp )
 
-stamps/stp-debug-configure: stamps/minisat-debug-make
-stamps/stp-asan-configure: stamps/minisat-asan-make
-stamps/stp-release-configure: stamps/minisat-release-make
+stamps/stp-debug-configure: stamps/minisat-debug-make $(STP_CMAKE_FILE)
+stamps/stp-asan-configure: stamps/minisat-asan-make $(STP_CMAKE_FILE)
+stamps/stp-release-configure: stamps/minisat-release-make $(STP_CMAKE_FILE)
 stamps/stp-%-configure: $(S2ESRC)/stp/CMakeLists.txt
 
 stamps/stp-debug-configure: CMAKE_BUILD_TYPE = Debug
