@@ -59,3 +59,37 @@ Documentation
 Setup instruction and user documentation can be found in the /docs folder, both
 in RST and HTML format.
 
+Building and running S2E
+-----------
+
+There are three different build modes for S2E available:
+- release: An optimized build. Debug information will be stripped.
+- debug: A debug build. Compiler optimizations are disabled (-O0, -O1 is used)
+         and debug information is preserved.
+- asan: Like the debug build, but also enables clang's address sanitizer. This
+       is useful to debug memory issues without such heavy tooling as valgrind.
+
+You can build a specific mode by, e.g., issuing 
+
+    make -f $(S2E_SRC_DIR)/Makefile stamps/qemu-debug-make
+    
+to build the debug configuration.
+Binaries will be produced in the
+$(S2E_BIN_DIR)/qemu-<mode>/<arch>-s2e-softmmu/qemu-system-arm, where <mode> is
+the build mode and <arch> is the guest architecture S2E is built for (i386,
+x86_64, arm, armeb). Scripts expect the environment variable S2E_DIR to be set
+to the build directory of your current build mode, so do, e.g.,
+ 
+    export S2E_DIR=$(S2E_BIN_DIR)/qemu-asan 
+    
+to choose the ASAN build mode before starting S2E.
+The ASAN build mode will require some more work for starting, as libraries need
+to be built as shared libraries. To tell the dynamic linker where it can find
+these libraries, do 
+
+    export LD_LIBRARY_PATH=$(S2E_BIN_DIR)/stp-asan/lib:$(S2E_BIN_DIR)/minisat-asan
+    
+before starting S2E.
+
+
+

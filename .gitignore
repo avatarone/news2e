@@ -11,3 +11,8 @@
 # Autoconf generated files in tools/ directory
 tools/autoconf/autom4te.cache/
 tools/autom4te.cache/
+
+#Eclipse project files
+/.cproject
+/.project
+/.settings/
